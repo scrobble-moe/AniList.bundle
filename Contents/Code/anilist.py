@@ -10,11 +10,28 @@ def get_anime(id):
                     averageScore
                     description
                     format
+                    duration
+                    bannerImage
                     coverImage {
                         extraLarge
                         medium
                     }
+                    staff {
+                        edges {
+                        node {
+                            name {
+                            full
+                            }
+                            image {
+                            large
+                            }
+                        }
+                        role
+                        }
+                    }
                     startDate {
+                        day
+                        month
                         year
                     }
                     studios {
@@ -38,6 +55,15 @@ def get_anime(id):
                                     large
                                 }
                             }
+                            role
+                            voiceActors {
+                                name {
+                                    full
+                                }
+                                image {
+                                    large
+                                }
+                            }
                         }
                     }
                 }
@@ -52,25 +78,6 @@ def get_anime(id):
     )
     try:
         request.load()
-
-
-        # Log.Error('TEST')
-        # Log.Error('TEST')
-        # Log.Error('TEST')
-        # Log.Error('TEST')
-        # Log.Error('TEST')
-        # Log.Error('TEST')
-        # Log.Error('TEST')
-
-        # Log.Error(JSON.ObjectFromString(request.content)['data'])
-
-        # Log.Error('TEST')
-        # Log.Error('TEST')
-        # Log.Error('TEST')
-        # Log.Error('TEST')
-        # Log.Error('TEST')
-        # Log.Error('TEST')
-        # Log.Error('TEST')
 
         return request.content
     except:

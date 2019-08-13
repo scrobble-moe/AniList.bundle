@@ -16,49 +16,15 @@ VOICE_LANGUAGES = {
 
 def update_anime(type, metadata, media, force):
     result = JSON.ObjectFromString(get_anime(metadata.id))
-    # Log.Error('TEST')
-    # Log.Error('TEST')
-    # Log.Error('TEST')
-    # Log.Error('TEST')
-    # Log.Error('TEST')
-    # Log.Error('TEST')
-    # Log.Error('TEST')
-
-    # Log.Error()
-
-    # Log.Error('TEST')
-    # Log.Error('TEST')
-    # Log.Error('TEST')
-    # Log.Error('TEST')
-    # Log.Error('TEST')
-    # Log.Error('TEST')
-    # Log.Error('TEST')
 
     anime = result['data']['Page']['media'][0]
 
 
-    
+    if metadata.genres is None or force:
+        metadata.genres = anime['genres']
 
-    # includes = {
-    #     'categories': [],
-    #     'episodes': [],
-    #     'animeProductions': [],
-    #     'producers': [],
-    #     'mediaCharacters': [],
-    #     'characters': [],
-    #     'characterVoices': [],
-    #     'people': [],
-    #     'mediaStaff': [],
-    #     'mappings': []
-    # }
-    # for include in result['included']:
-    #     includes[include['type']].append(include)
-
-    # if metadata.genres is None or force:
-    #     metadata.genres = map(lambda c: c['attributes']['title'], includes['categories'])
-
-    # if (metadata.duration is None or force) and anime['episodeLength'] is not None:
-        # metadata.duration = anime['episodeLength'] * 60000
+    if (metadata.duration is None or force) and anime['duration'] is not None:
+        metadata.duration = anime['duration'] * 60000
 
     if (metadata.rating is None or force) and anime['averageScore'] is not None:
         metadata.rating = float(anime['averageScore']) / 10
@@ -76,13 +42,22 @@ def update_anime(type, metadata, media, force):
     if (metadata.summary is None or force) and anime['description'] is not None:
         metadata.summary = anime['description']
 
-    # if (metadata.originally_available_at is None or force) and anime['startDate'] is not None:
+    if (metadata.originally_available_at is None or force) and anime['startDate'] is not None:
     #     split = map(lambda s: int(s), anime['startDate'].split('-'))
-    #     start_date = datetime(split[0], split[1], split[2])
-    #     metadata.originally_available_at = start_date
+        start_date = datetime(anime['startDate']['year'], anime['startDate']['month'], anime['startDate']['day'])
+        metadata.originally_available_at = start_date
 
     # if (metadata.content_rating is None or force) and anime['ageRatingGuide'] is not None:
     #     metadata.content_rating = anime['ageRatingGuide']
+
+    if metadata.studio is None or force:
+        # anime_studio = find_first(lambda ap: ap['attributes']['role'] == 'studio',
+        #     includes['animeProductions'])
+        anime_studio = anime['studios']['edges'][0]
+
+        if anime_studio is not None:
+                metadata.studio = anime_studio['node']['name']
+
 
     # if metadata.studio is None or force:
     #     anime_studio = find_first(lambda ap: ap['attributes']['role'] == 'studio',
@@ -93,42 +68,28 @@ def update_anime(type, metadata, media, force):
     #         if studio is not None:
     #             metadata.studio = studio['attributes']['name']
 
-    # if metadata.roles is None or force:
-    #     for char in includes['mediaCharacters']:
-    #         char_id = char['relationships']['character']['data']['id']
-    #         character = find_first(lambda c: c['id'] == char_id, includes['characters'])
-    #         if character is not None:
-    #             voice_ids = map(lambda cv: cv['id'], char['relationships']['voices']['data'])
-    #             voices = filter(lambda v: v['id'] in voice_ids, includes['characterVoices'])
-    #             if voices is not None:
-    #                 for voice in voices:
-    #                     person_id = voice['relationships']['person']['data']['id']
-    #                     person = find_first(lambda p: p['id'] == person_id, includes['people'])
-    #                     if person is not None:
-    #                         role = metadata.roles.new()
-    #                         role.name = person['attributes']['name']
-    #                         if person['attributes']['image'] is not None:
-    #                             role.photo = person['attributes']['image']['original']
+    if metadata.roles is None or force:
+        for character in anime['characters']['edges']:
+            if character is not None:
+                voices = character['voiceActors']
+                if voices is not None:
+                    for person in voices:
+                        if person is not None:
+                            role = metadata.roles.new()
+                            role.name = person['name']['full']
+                            if person['image']['large'] is not None:
+                                role.photo = person['image']['large']
+                            if character['node']['name']['full'] is not None:
+                                role.role = character['node']['name']['full']
 
-    #                         if voice['attributes']['locale'] is not None:
-    #                             locale = voice['attributes']['locale']
-    #                             locale = VOICE_LANGUAGES.get(locale, locale)
-    #                             role.role = '{} ({})'.format(
-    #                                 character['attributes']['canonicalName'], locale
-    #                             )
-    #                         else:
-    #                             role.role = character['attributes']['canonicalName']
-
-    #     for staff in includes['mediaStaff']:
-    #         person_id = staff['relationships']['person']['data']['id']
-    #         person = find_first(lambda p: p['id'] == person_id, includes['people'])
-    #         if person is not None:
-    #             role = metadata.roles.new()
-    #             role.name = person['attributes']['name']
-    #             if person['attributes']['image'] is not None:
-    #                 role.photo = person['attributes']['image']['original']
-    #             if staff['attributes']['role'] is not None:
-    #                 role.role = staff['attributes']['role']
+        for staff in anime['staff']['edges']:
+            if staff is not None:
+                role = metadata.roles.new()
+                role.name = staff['node']['name']['full']
+                if staff['node']['image']['large'] is not None:
+                    role.photo = staff['node']['image']['large']
+                if staff['role'] is not None:
+                    role.role = staff['role']
 
     if (metadata.posters is None or force) and anime['coverImage']['extraLarge'] is not None:
         poster_image = anime['coverImage']
@@ -140,16 +101,16 @@ def update_anime(type, metadata, media, force):
         except:
             Log.Error('Error loading poster - Anime: ' + metadata.id)
 
-    # if type == 'tv':
-    #     if (metadata.banners is None or force) and anime['coverImage'] is not None:
-    #         cover_image = anime['coverImage']
-    #         try:
-    #             thumbnail = Proxy.Preview(HTTP.Request(
-    #                 cover_image['original'], immediate = True
-    #             ).content)
-    #             metadata.banners[cover_image['original']] = thumbnail
-    #         except:
-    #             Log.Error('Error loading banner - Anime: ' + metadata.id)
+    if type == 'tv':
+        if (metadata.banners is None or force) and anime['bannerImage'] is not None:
+            cover_image = anime['coverImage']
+            try:
+                thumbnail = Proxy.Preview(HTTP.Request(
+                    cover_image, immediate = True
+                ).content)
+                metadata.banners[cover_image] = thumbnail
+            except:
+                Log.Error('Error loading banner - Anime: ' + metadata.id)
 
     #     if 1 in media.seasons:
     #         update_episodes(media, metadata, force, anime, includes['episodes'])
@@ -218,12 +179,6 @@ def update_episodes(media, metadata, force, anime, inc_episodes):
             except:
                 Log.Error('Error loading thumbnail - Anime:Episode: ' +
                     metadata.id + ':' + number)
-
-        if (episode.duration is None or force) and ep['length'] is not None:
-            episode.duration = ep['length'] * 60000
-
-def find_first(p, list):
-    for i in list:
-        if p(i):
-            return i
-    return None
+# DONT THINK THIS IS NEEDED
+        # if (episode.duration is None or force) and ep['length'] is not None:
+        #     episode.duration = ep['length'] * 60000
