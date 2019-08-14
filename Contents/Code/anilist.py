@@ -10,7 +10,7 @@ def get_anime(id):
                     averageScore
                     description
                     format
-                    duration
+                    idMal
                     bannerImage
                     coverImage {
                         extraLarge
@@ -34,7 +34,7 @@ def get_anime(id):
                         month
                         year
                     }
-                    studios {
+                    studios(isMain: true) {
                         edges {
                             node {
                                 name
@@ -83,5 +83,34 @@ def get_anime(id):
     except:
         Log.Error('Error getting anime info')
 
-    
+def get_anime_kitsu(id):
+    headers = {
+        'Accept': 'application/vnd.api+json',
+        'Content-Type': 'application/vnd.api+json'
+    }
 
+    kitsuRequest = HTTP.Request(
+        'https://kitsu.io/api/edge/mappings?filter[externalSite]=myanimelist/anime&filter[externalId]=' + str(id) + '&include=item',
+        headers = headers
+    )
+    try:
+        kitsuRequest.load()
+        return kitsuRequest.Content
+    except:
+        Log.Error('Error getting anime info')
+
+def get_episodes_kitsu(id):
+    headers = {
+        'Accept': 'application/vnd.api+json',
+        'Content-Type': 'application/vnd.api+json'
+    }
+
+    kitsuRequest = HTTP.Request(
+        'https://kitsu.io/api/edge/anime/' + str(id) + '/episodes',
+        headers = headers
+    )
+    try:
+        kitsuRequest.load()
+        return kitsuRequest.content
+    except:
+        Log.Error('Error getting anime info')

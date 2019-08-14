@@ -3,7 +3,7 @@
     "id": "title_language",
     "label": "Title Language Preference",
     "type": "enum",
-    "values": ["English", "Romanized", "Canonical"],
-    "default": "Canonical"
+    "values": ["Romaji", "English", "Native"],
+    "default": "Romaji"
   }
 ]

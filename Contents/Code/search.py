@@ -1,12 +1,12 @@
 def search_anime(type, results, media, lang):
     query = media.show if type == 'tv' else media.name
     query = String.Quote(query)
-    if media.year is not None:
-        query += ' (' + media.year + ')'
+    # if media.year is not None:
+    #     query += ' (' + media.year + ')'
 
     query = '''
     query {
-        Media (search: "''' + media.show + '''", type: ANIME) {
+        Media (search: "''' + query + '''", type: ANIME) {
             id
             title {
                 romaji
@@ -28,7 +28,7 @@ def search_anime(type, results, media, lang):
     try:
         request.load()
     except:
-        Log.Error('Error searching Kitsu - Anime: ' + query)
+        Log.Error('Error searching AniList - Anime: ' + query)
         return
     result = JSON.ObjectFromString(request.content)
 
