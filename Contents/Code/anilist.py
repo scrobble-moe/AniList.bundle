@@ -122,13 +122,15 @@ def get_episodes_kitsu(id):
 
         for episode in episodes['data']:
             episodeRequest = HTTP.Request(
-                'https://kitsu.io/api/edge/episodes/' + episode['id'] + '?fields[episodes]=synopsis,canonicalTitle,relativeNumber,airdate',
+                'https://kitsu.io/api/edge/episodes/' + episode['id'] + '?fields[episodes]=synopsis,canonicalTitle,relativeNumber,number,airdate',
                 headers = headers
             )
             episodeRequest.load()
             episode = JSON.ObjectFromString(episodeRequest.content)
 
-            anime_episodes[episode['data']['attributes']['relativeNumber']] = episode['data']
+            if episode['data']['attributes']['relativeNumber']:
+                anime_episodes[episode['data']['attributes']['relativeNumber']] = episode['data']
+            else: anime_episodes[episode['data']['attributes']['number']] = episode['data']
 
         return anime_episodes
     except:
