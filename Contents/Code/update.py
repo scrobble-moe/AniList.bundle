@@ -1,169 +1,240 @@
 from datetime import datetime
 from anilist import get_anime, get_anime_kitsu, get_episodes_kitsu
+import re
 
 def update_anime(type, metadata, media, force):
     result = JSON.ObjectFromString(get_anime(metadata.id))
-
+    has_kitsu_data = True
+    has_kitsu_episode_data = True
     anime = result['data']['Page']['media'][0]
 
-    kitsu = JSON.ObjectFromString(get_anime_kitsu(anime['idMal']))
+    # Get Kistu data
+    try:
+        kitsu = JSON.ObjectFromString(get_anime_kitsu(str(anime['idMal'])))
+    except:
+        has_kitsu_data = False
+        Log.Error('Error: Show has no relation for getting kitsu data: ' + metadata.id)
 
-    kitsu_episodes = JSON.ObjectFromString(get_episodes_kitsu(kitsu['included'][0]['id']))
+    #Get episode data
+    if has_kitsu_data and Prefs['episode_support']:
+        try:
+            kitsu_episodes = get_episodes_kitsu(str(kitsu['included'][0]['id']))
+        except:
+            has_kitsu_episode_data = False
+            Log.Error('Error: Show has no episode data: ' + metadata.id)
+    else: has_kitsu_episode_data = False
 
+    # Genres
     if metadata.genres is None or force:
-        metadata.genres = anime['genres']
-
-    if (metadata.rating is None or force) and anime['averageScore'] is not None:
-        metadata.rating = float(anime['averageScore']) / 10
-
-    if (metadata.title is None or force) and anime['title'] is not None:
-        title_language = Prefs['title_language']
-        if title_language == 'romaji' and anime['title']['romaji'] is not None:
-            metadata.title = anime['title']['english']
-        elif title_language == 'english' and anime['title']['english'] is not None:
-            metadata.title = anime['title']['english']
-        elif title_language == 'native' and anime['title']['native'] is not None:
-            metadata.title = anime['title']['english']
-        elif anime['title']['romaji'] is not None:
-            metadata.title = anime['title']['romaji']
-        elif anime['title']['english'] is not None:
-            metadata.title = anime['title']['english']
-        else:
-            metadata.title = anime['title']['romaji']
+        metadata.genres.clear()
+        try:
+            metadata.genres = anime['genres']
+        except:
+            Log.Error('Error: Show has no genres: ' + metadata.id)
         
+    # Rating
+    if metadata.rating is None or force:
+        try:
+            metadata.rating = float(anime['averageScore']) / 10
+        except:
+            Log.Error('Error: Show has no rating: ' + metadata.id)
 
-    if (metadata.summary is None or force) and anime['description'] is not None:
-        metadata.summary = anime['description']
+    # Title
+    if metadata.title is None or force:
+        title_language = Prefs['title_language']        
+        for language in anime['title']:
+            if language == title_language:
+                metadata.title = anime['title'][language]
+                break
+            metadata.title = anime['title'][language]
 
-    if (metadata.originally_available_at is None or force) and anime['startDate'] is not None:
-        start_date = datetime(anime['startDate']['year'], anime['startDate']['month'], anime['startDate']['day'])
-        metadata.originally_available_at = start_date
-
-    if (metadata.content_rating is None or force) and kitsu['included'][0]['attributes']['ageRating'] is not None:
-        metadata.content_rating = kitsu['included'][0]['attributes']['ageRating']
-
-    if (metadata.studio is None or force) and len(anime['studios']['edges']):
-        anime_studio = anime['studios']['edges'][0]
-
-        if anime_studio is not None:
-                metadata.studio = anime_studio['node']['name']
-
-    if metadata.roles is None or force:
-        for character in anime['characters']['edges']:
-            if character is not None:
-                voices = character['voiceActors']
-                if voices is not None:
-                    for person in voices:
-                        if person is not None:
-                            role = metadata.roles.new()
-                            role.name = person['name']['full']
-                            if person['image']['large'] is not None:
-                                role.photo = person['image']['large']
-                            if character['node']['name']['full'] is not None:
-                                role.role = character['node']['name']['full']
-
-        for staff in anime['staff']['edges']:
-            if staff is not None:
-                role = metadata.roles.new()
-                role.name = staff['node']['name']['full']
-                if staff['node']['image']['large'] is not None:
-                    role.photo = staff['node']['image']['large']
-                if staff['role'] is not None:
-                    role.role = staff['role']
-
-    if (metadata.posters is None or force) and anime['coverImage']['extraLarge'] is not None:
-        poster_image = anime['coverImage']
+    # Posters
+    if metadata.posters is None or force:
         try:
             thumbnail = Proxy.Preview(HTTP.Request(
-                poster_image['medium'], immediate = True
+                anime['coverImage']['medium'], immediate = True
             ).content)
-            metadata.posters[poster_image['extraLarge']] = thumbnail
+            metadata.posters[anime['coverImage']['extraLarge']] = thumbnail
         except:
-            Log.Error('Error loading poster - Anime: ' + metadata.id)
+            Log.Error('Error: Show has no posters: ' + metadata.id)
+      
+    # Summary
+    if metadata.summary is None or force:
+        try:
+            metadata.summary = anime['description']
+        except:
+            Log.Error('Error: Show has no summary: ' + metadata.id)
 
+    # Country
+    if metadata.countries is None or force:
+        try:
+            if anime['countryOfOrigin'] == 'JP':
+                metadata.countries = ["Japan"]
+            elif anime['countryOfOrigin'] == 'CN':
+                metadata.countries = ["China"]
+            elif anime['countryOfOrigin'] == 'KR':
+                metadata.countries = ["Korea"]
+            else:
+                metadata.countries = ["Unknown, please report"]
+        except:
+            Log.Error('Error: Show has no country of origin: ' + metadata.id)
+        
+    # Start Date
+    if metadata.originally_available_at is None or force:
+        try:
+            metadata.originally_available_at = datetime(anime['startDate']['year'], anime['startDate']['month'], anime['startDate']['day'])
+        except:
+            Log.Error('Error: Show has no start date: ' + metadata.id)
+
+    # Studio
+    if metadata.studio is None or force:
+        try:
+            metadata.studio = anime['studios']['edges'][0]['node']['name']
+        except:
+            Log.Error('Error: Show has no studio: ' + metadata.id)
+
+    # Content Rating
+    if has_kitsu_data and metadata.content_rating is None or force:
+        try:
+            metadata.content_rating = kitsu['included'][0]['attributes']['ageRating']
+        except:
+            Log.Error('Error: Show has no content rating: ' + metadata.id)
+
+
+    if metadata.roles is None or force:
+        metadata.roles.clear()
+
+    # Characters
+    if metadata.roles is None or force:
+        try:
+            for character in anime['characters']['edges']:
+                # Create new role
+                role = metadata.roles.new()
+
+                # Get correct VA
+                for VA in character['voiceActors']:
+
+                    # Set VA Name
+                    try:
+                        role.name = va['node']['name']['full']
+                    except: 
+                        pass
+
+                    # Set VA Photo
+                    try:
+                        role.photo = va['node']['image']['large']
+                    except: 
+                        pass
+
+                    # Set VA Role
+                    try:
+                        role.role = va['role']
+                    except: 
+                        pass
+        except:
+            Log.Error('Error: Show has no Characters: ' + metadata.id)
+
+    # Staff
+    if metadata.roles is None or force:
+        try:
+            for staff in anime['staff']['edges']:
+
+                # Create new role
+                role = metadata.roles.new()
+
+                # Set Staff Name
+                try:
+                    role.name = staff['node']['name']['full']
+                except: 
+                    pass
+
+                # Set Staff Photo
+                try:
+                    role.photo = staff['node']['image']['large']
+                except: 
+                    pass
+
+                # Set Staff Role
+                try:
+                    role.role = staff['role']
+                except: 
+                    pass
+        except:
+            Log.Error('Error: Show has no staff: ' + metadata.id)
+
+    # TV Specific
     if type == 'tv':
-        if (metadata.banners is None or force) and anime['bannerImage'] is not None:
-            banner_image = anime['bannerImage']
+
+        # Banners
+        if metadata.banners is None or force:
             try:
                 thumbnail = Proxy.Preview(HTTP.Request(
-                    banner_image, immediate = True
+                    anime['bannerImage'], immediate = True
                 ).content)
-                metadata.banners[banner_image] = thumbnail
+                metadata.banners[anime['bannerImage']] = thumbnail
             except:
-                Log.Error('Error loading banner - Anime: ' + metadata.id)
+                Log.Error('Error: Show has no banners: ' + metadata.id)
 
-    # try:
-    #     update_episodes(media, metadata, force, anime)
-    # except:
-    #     Log.Error('Not updating episodes')
-    #     return
+    # Movie Specific
+    if type == 'movie':
 
-# def update_episodes(media, metadata, force, anime):
-#     for number in media.seasons[1].episodes:
-#         number = int(number)
-#         episode = metadata.seasons[1].episodes[number]
-#         Log.Error(kitsu_episodes['data'][number])
+        # Year
+        if metadata.year is None or force:
+            try:
+                metadata.year = anime['startDate']['year']
+            except:
+                Log.Error('Error: Show has no start date: ' + metadata.id)
 
-        # if anime['format'] == 'MOVIE':
-        #     if (episode.title is None or force) and metadata.title is not None:
-        #         episode.title = metadata.title
+        # Roles
+        if metadata.roles is None or force:
+            
+            # Staff
+            try:
+                for staff in anime['staff']['edges']:
 
-        #     if (episode.thumbs is None or force) and anime['coverImage'] is not None:
-        #         poster_image = anime['coverImage']
-        #         try:
-        #             thumbnail = Proxy.Preview(HTTP.Request(
-        #                 poster_image['medium'], immediate = True
-        #             ).content)
-        #             episode.thumbs[poster_image['extraLarge']] = thumbnail
-        #         except:
-        #             Log.Error('Error loading poster - Anime: ' + metadata.id)
+                    # Director
+                    try:
+                        if staff['role'] == 'Director':
+                            director = metadata.directors.new()
+                            director.name = staff['node']['name']['full']
+                    except:
+                        pass
+            except:
+                Log.Error('Error: Show has no staff: ' + metadata.id)
 
-        # if (episode.summary is None or force) and metadata.summary is not None:
-        #     episode.summary = metadata.summary
-
-        # if (episode.originally_available_at is None or force):
-        #     if metadata.originally_available_at is not None:
-        #         episode.originally_available_at = metadata.originally_available_at
+    # Episodes
+    if Prefs['episode_support'] and has_kitsu_episode_data and 1 in media.seasons:
+        update_episodes(media, metadata, force, anime, kitsu_episodes)
 
 
-        
+def update_episodes(media, metadata, force, anime, kitsu_episodes):
 
-        
+    for plex_episode_number in media.seasons[1].episodes:
+        try:
+            episode = metadata.seasons[1].episodes[int(plex_episode_number)]
+            kitsu_episode = kitsu_episodes.get(int(plex_episode_number))
 
-            # if (episode.duration is None or force) and metadata.duration is not None:
-            #     episode.duration = metadata.duration
+            # Description
+            if episode.summary is None or force:
+                try:
+                    cleanr = re.compile('<.*?>')
+                    episode.summary = re.sub(cleanr, '', kitsu_episode['attributes']['synopsis'])
+                except:
+                    Log.Error('Error: Episode has no summary: ' + metadata.id)
 
-            # return
+            # Title
+            if episode.title is None or force:
+                try:
+                    episode.title = kitsu_episode['attributes']['canonicalTitle']
+                except:
+                    Log.Error('Error: Episode has no title: ' + metadata.id)
 
-        # ep = find_first(lambda e: e['attributes']['relativeNumber'] == number,
-        #     inc_episodes)
-
-        # if ep is None:
-        #     ep = find_first(lambda e: e['attributes']['number'] == number, inc_episodes)
-        #     if ep is None:
-        #         return
-
-        # ep = ep['attributes']
-
-        # if (episode.title is None or force) and ep['canonicalTitle'] is not None:
-        #     episode.title = ep['canonicalTitle']
-
-        # if (episode.summary is None or force) and ep['synopsis'] is not None:
-        #     episode.summary = ep['synopsis']
-
-        # if (episode.originally_available_at is None or force) and ep['airdate'] is not None:
-        #     split = map(lambda s: int(s), ep['airdate'].split('-'))
-        #     air_date = datetime(split[0], split[1], split[2])
-        #     episode.originally_available_at = air_date
-
-        # if (episode.thumbs is None or force) and ep['thumbnail'] is not None:
-        #     thumb_image = ep['thumbnail']['original']
-        #     try:
-        #         thumbnail = Proxy.Preview(HTTP.Request(thumb_image, immediate = True).content)
-        #         episode.thumbs[thumb_image] = thumbnail
-        #     except:
-        #         Log.Error('Error loading thumbnail - Anime:Episode: ' +
-        #             metadata.id + ':' + number)
-# DONT THINK THIS IS NEEDED
-        # if (episode.duration is None or force) and ep['length'] is not None:
-        #     episode.duration = ep['length'] * 60000
+            # Air date
+            if episode.originally_available_at is None or force:
+                try:
+                    split = map(lambda s: int(s), kitsu_episode['attributes']['airdate'].split('-'))
+                    episode.originally_available_at = datetime(split[0], split[1], split[2])
+                except:
+                    Log.Error('Error: Episode has no air date: ' + metadata.id)
+        except:
+            pass

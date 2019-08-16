@@ -11,6 +11,7 @@ def get_anime(id):
                     description
                     format
                     idMal
+                    countryOfOrigin
                     bannerImage
                     coverImage {
                         extraLarge
@@ -43,6 +44,8 @@ def get_anime(id):
                     }
                     title {
                         romaji
+                        english
+                        native
                     }
                     status
                     characters {
@@ -56,13 +59,14 @@ def get_anime(id):
                                 }
                             }
                             role
-                            voiceActors {
+                            voiceActors(language: ''' + Prefs['va_language'] + ''') {
                                 name {
                                     full
                                 }
                                 image {
                                     large
                                 }
+                                language
                             }
                         }
                     }
@@ -90,27 +94,43 @@ def get_anime_kitsu(id):
     }
 
     kitsuRequest = HTTP.Request(
-        'https://kitsu.io/api/edge/mappings?filter[externalSite]=myanimelist/anime&filter[externalId]=' + str(id) + '&include=item',
-        headers = headers
-    )
-    try:
-        kitsuRequest.load()
-        return kitsuRequest.Content
-    except:
-        Log.Error('Error getting anime info')
-
-def get_episodes_kitsu(id):
-    headers = {
-        'Accept': 'application/vnd.api+json',
-        'Content-Type': 'application/vnd.api+json'
-    }
-
-    kitsuRequest = HTTP.Request(
-        'https://kitsu.io/api/edge/anime/' + str(id) + '/episodes',
+        'https://kitsu.io/api/edge/mappings?filter[externalSite]=myanimelist/anime&filter[externalId]=' + id + '&include=item',
         headers = headers
     )
     try:
         kitsuRequest.load()
         return kitsuRequest.content
     except:
-        Log.Error('Error getting anime info')
+        Log.Error('Error getting kitsu data')
+    return
+
+def get_episodes_kitsu(id):
+    anime_episodes = {}
+
+    headers = {
+        'Accept': 'application/vnd.api+json',
+        'Content-Type': 'application/vnd.api+json'
+    }
+
+    kitsuRequest = HTTP.Request(
+        'https://kitsu.io/api/edge/anime/' + id + '/relationships/episodes',
+        headers = headers
+    )
+    try:
+        kitsuRequest.load()
+        episodes = JSON.ObjectFromString(kitsuRequest.content)
+
+        for episode in episodes['data']:
+            episodeRequest = HTTP.Request(
+                'https://kitsu.io/api/edge/episodes/' + episode['id'] + '?fields[episodes]=synopsis,canonicalTitle,relativeNumber,airdate',
+                headers = headers
+            )
+            episodeRequest.load()
+            episode = JSON.ObjectFromString(episodeRequest.content)
+
+            anime_episodes[episode['data']['attributes']['relativeNumber']] = episode['data']
+
+        return anime_episodes
+    except:
+        Log.Error('Error anime episodes info')
+    return    

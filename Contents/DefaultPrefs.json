@@ -1,9 +1,23 @@
 [
   {
+    "id": "episode_support",
+    "label": "Enable episode metadata (slower)",
+    "type": "bool",
+    "values": ["True", "False"],
+    "default": "True"
+  },
+  {
     "id": "title_language",
     "label": "Title Language Preference",
     "type": "enum",
-    "values": ["Romaji", "English", "Native"],
-    "default": "Romaji"
+    "values": ["romaji", "english", "native"],
+    "default": "romaji"
+  },
+  {
+    "id": "va_language",
+    "label": "Voice Actor Language Preference",
+    "type": "enum",
+    "values": ["JAPANESE", "ENGLISH", "KOREAN", "ITALIAN", "SPANISH", "PORTUGUESE", "FRENCH", "GERMAN", "HEBREW", "HUNGARIAN"],
+    "default": "JAPANESE"
   }
 ]
