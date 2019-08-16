@@ -1,18 +1,21 @@
 def search_anime(type, results, media, lang):
     query = media.show if type == 'tv' else media.name
     query = String.Quote(query)
-    # if media.year is not None:
-    #     query += ' (' + media.year + ')'
 
     query = '''
     query {
-        Media (search: "''' + query + '''", type: ANIME) {
-            id
-            title {
-                romaji
+        anime: Page (perPage: 8) {
+            pageInfo {
+                total
             }
-            startDate {
-                year
+            results: media (type: ANIME, search: "''' + query + '''") {
+                id
+                title {
+                    romaji
+                }
+                startDate {
+                    year
+                }
             }
         }
     }
@@ -30,12 +33,16 @@ def search_anime(type, results, media, lang):
     except:
         Log.Error('Error searching AniList - Anime: ' + query)
         return
-    result = JSON.ObjectFromString(request.content)
 
-    results.Append(MetadataSearchResult(
-        id = str(result['data']['Media']['id']),
-        name = result['data']['Media']['title']['romaji'],
-        year = result['data']['Media']['startDate']['year'],
-        score = 100,
-        lang = lang
-    ))
+    s = 100
+    for result in JSON.ObjectFromString(request.content)['data']['anime']['results']:
+        results.Append(MetadataSearchResult(
+            id = str(result['id']),
+            name = result['title']['romaji'],
+            year = result['startDate']['year'],
+            score = s,
+            lang = lang
+        ))
+        s = s - 1
+    return
+    

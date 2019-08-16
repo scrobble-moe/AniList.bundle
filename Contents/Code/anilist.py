@@ -86,6 +86,7 @@ def get_anime(id):
         return request.content
     except:
         Log.Error('Error getting anime info')
+    return
 
 def get_anime_kitsu(id):
     headers = {
@@ -135,4 +136,4 @@ def get_episodes_kitsu(id):
         return anime_episodes
     except:
         Log.Error('Error anime episodes info')
-    return    
+    return
