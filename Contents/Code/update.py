@@ -106,6 +106,7 @@ def update_anime(type, metadata, media, force):
 
     # Characters
     if metadata.roles is None or force:
+        # Log.Error(anime['characters']['edges'])
         try:
             for character in anime['characters']['edges']:
                 # Create new role
@@ -116,19 +117,19 @@ def update_anime(type, metadata, media, force):
 
                     # Set VA Name
                     try:
-                        role.name = va['node']['name']['full']
+                        role.name = VA['name']['full']
                     except: 
                         pass
 
                     # Set VA Photo
                     try:
-                        role.photo = va['node']['image']['large']
+                        role.photo = VA['image']['large']
                     except: 
                         pass
 
-                    # Set VA Role
+                    # Set Character Name
                     try:
-                        role.role = va['role']
+                        role.role = character['node']['name']['full']
                     except: 
                         pass
         except:
