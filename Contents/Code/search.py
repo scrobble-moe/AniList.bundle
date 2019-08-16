@@ -2,24 +2,47 @@ def search_anime(type, results, media, lang):
     query = media.show if type == 'tv' else media.name
     query = String.Quote(query)
 
-    query = '''
-    query {
-        anime: Page (perPage: 8) {
-            pageInfo {
-                total
-            }
-            results: media (type: ANIME, search: "''' + query + '''") {
-                id
-                title {
-                    romaji
+    if query.isdigit():
+        query = '''
+            query {
+                anime: Page (perPage: 8) {
+                    pageInfo {
+                        total
+                    }
+                    results: media (type: ANIME, id: ''' + query + ''') {
+                        id
+                        title {
+                            romaji
+                        }
+                        startDate {
+                            year
+                        }
+                    }
                 }
-                startDate {
-                    year
+            }
+        '''
+
+    else:
+        query = '''
+            query {
+                anime: Page (perPage: 8) {
+                    pageInfo {
+                        total
+                    }
+                    results: media (type: ANIME, search: "''' + query + '''") {
+                        id
+                        title {
+                            romaji
+                        }
+                        startDate {
+                            year
+                        }
+                    }
                 }
             }
-        }
-    }
-    '''
+        '''
+
+    Log.Error(query)
 
     request = HTTP.Request(
         'https://graphql.anilist.co',
