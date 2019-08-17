@@ -1,52 +1,43 @@
 def search_anime(type, results, media, lang):
-    query = media.show if type == 'tv' else media.name
-    query = String.Quote(query)
+    search_term = media.show if type == 'tv' else media.name
+    search_year = media.year
+    if media.year is None:
+        search_year = 'null'
 
-    if query.isdigit():
-        query = '''
-            query {
-                anime: Page (perPage: 8) {
-                    pageInfo {
-                        total
-                    }
-                    results: media (type: ANIME, id: ''' + query + ''') {
-                        id
-                        title {
-                            romaji
-                        }
-                        startDate {
-                            year
-                        }
-                    }
+    query = '''
+    query ($id: Int, $perPage: Int, $search: String, $seasonYear: Int) {
+        anime: Page(perPage: $perPage) {
+            pageInfo {
+                total
+            }
+            results: media(type: ANIME, id: $id, search: $search seasonYear: $seasonYear) {
+                id
+                title {
+                    romaji
+                }
+                startDate {
+                    year
                 }
             }
-        '''
+        }
+    }
+    '''
 
-    else:
-        query = '''
-            query {
-                anime: Page (perPage: 8) {
-                    pageInfo {
-                        total
-                    }
-                    results: media (type: ANIME, search: "''' + query + '''") {
-                        id
-                        title {
-                            romaji
-                        }
-                        startDate {
-                            year
-                        }
-                    }
-                }
-            }
-        '''
-
-    Log.Error(query)
+    if search_term.isdigit():
+        variables = '''{
+            "id": "'''+ search_term +'''",
+            "perPage": 3
+        }'''
+    else: 
+        variables = '''{
+            "search": "'''+ search_term +'''",
+            "perPage": 3,
+            "seasonYear": '''+ str(search_year) +'''
+        }'''
 
     request = HTTP.Request(
         'https://graphql.anilist.co',
-        values = {'query': query},
+        values = {'query': query, 'variables': variables},
         method = "POST"
     )
 
