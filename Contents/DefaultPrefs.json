@@ -7,6 +7,13 @@
     "default": "True"
   },
   {
+    "id": "folder_id",
+    "label": "Use id to match, i.e '101348 - Vinland Saga'",
+    "type": "bool",
+    "values": ["True", "False"],
+    "default": "False"
+  },
+  {
     "id": "title_language",
     "label": "Title Language Preference",
     "type": "enum",

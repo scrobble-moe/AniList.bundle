@@ -1,6 +1,9 @@
+import re
+
 def search_anime(type, results, media, lang):
     search_term = media.show if type == 'tv' else media.name
     search_year = media.year
+
     if media.year is None:
         search_year = 'null'
 
@@ -22,16 +25,18 @@ def search_anime(type, results, media, lang):
         }
     }
     '''
-
-    if search_term.isdigit():
+    if Prefs['folder_id']:
         variables = '''{
-            "id": "'''+ search_term +'''",
-            "perPage": 3
+            "id": "'''+ re.match('(.*?) - ', search_term).group(1) +'''"
+        }'''
+    elif search_term.isdigit():
+        variables = '''{
+            "id": "'''+ search_term +'''"
         }'''
     else: 
         variables = '''{
             "search": "'''+ search_term +'''",
-            "perPage": 3,
+            "perPage": 6,
             "seasonYear": '''+ str(search_year) +'''
         }'''
 
