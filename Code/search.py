@@ -1,4 +1,7 @@
+import certifi
+import requests
 import re
+
 
 def search_anime(type, results, media, lang):
     search_term = media.show if type == 'tv' else media.name
@@ -40,15 +43,11 @@ def search_anime(type, results, media, lang):
             "seasonYear": '''+ str(search_year) +'''
         }'''
 
-    request = HTTP.Request(
-        'https://graphql.anilist.co',
-        values = {'query': query, 'variables': variables},
-        method = "POST"
-    )
-
-
     try:
-        request.load()
+        request = requests.post(
+            'https://graphql.anilist.co',
+            data = {'query': query, 'variables': variables}
+        )
     except:
         Log.Error('Error searching AniList - Anime: ' + query)
         return
