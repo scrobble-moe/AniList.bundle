@@ -80,7 +80,8 @@ def get_anime(id):
     try:
         return requests.post(
             'https://graphql.anilist.co',
-            data = {'query': query}
+            data = {'query': query},
+            verify=certifi.where()
         ).content
     except:
         Log.Error('Error getting anime info')
@@ -95,7 +96,8 @@ def get_anime_kitsu(id):
     try:
         return requests.get(
             'https://kitsu.io/api/edge/mappings?filter[externalSite]=myanimelist/anime&filter[externalId]=' + id + '&include=item',
-            headers = headers
+            headers = headers,
+            verify=certifi.where()
         ).content
     except:
         Log.Error('Error getting kitsu data')
@@ -111,14 +113,16 @@ def get_episodes_kitsu(id):
     try:
         kitsuRequest = requests.get(
             'https://kitsu.io/api/edge/anime/' + id + '/relationships/episodes',
-            headers = headers
+            headers = headers,
+            verify=certifi.where()
         ).content
         episodes = JSON.ObjectFromString(kitsuRequest)
 
         for episode in episodes['data']:
             episodeRequest = requests.get(
                 'https://kitsu.io/api/edge/episodes/' + episode['id'] + '?fields[episodes]=synopsis,canonicalTitle,relativeNumber,number,airdate',
-                headers = headers
+                headers = headers,
+                verify=certifi.where()
             ).content
             episode = JSON.ObjectFromString(episodeRequest)
 

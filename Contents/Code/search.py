@@ -46,7 +46,8 @@ def search_anime(type, results, media, lang):
     try:
         request = requests.post(
             'https://graphql.anilist.co',
-            data = {'query': query, 'variables': variables}
+            data = {'query': query, 'variables': variables},
+            verify=certifi.where()
         )
     except:
         Log.Error('Error searching AniList - Anime: ' + query)

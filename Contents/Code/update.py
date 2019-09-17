@@ -55,7 +55,8 @@ def update_anime(type, metadata, media, force):
         try:            
             thumbnail = Proxy.Preview(
                 requests.get(
-                    anime['coverImage']['medium']
+                    anime['coverImage']['medium'],
+                    verify=certifi.where()
                 ).content
             )
             metadata.posters[anime['coverImage']['extraLarge']] = thumbnail
@@ -175,7 +176,8 @@ def update_anime(type, metadata, media, force):
             try:
                 thumbnail = Proxy.Preview(
                     requests.get(
-                        anime['bannerImage']
+                        anime['bannerImage'],
+                        verify=certifi.where()
                     ).raw
                 )
                 metadata.banners[anime['bannerImage']] = thumbnail
