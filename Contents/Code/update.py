@@ -1,5 +1,7 @@
 from datetime import datetime
 from anilist import get_anime, get_anime_kitsu, get_episodes_kitsu
+import certifi
+import requests
 import re
 
 def update_anime(type, metadata, media, force):
@@ -50,10 +52,12 @@ def update_anime(type, metadata, media, force):
 
     # Posters
     if metadata.posters is None or force:
-        try:
-            thumbnail = Proxy.Preview(HTTP.Request(
-                anime['coverImage']['medium'], immediate = True
-            ).content)
+        try:            
+            thumbnail = Proxy.Preview(
+                requests.get(
+                    anime['coverImage']['medium']
+                ).content
+            )
             metadata.posters[anime['coverImage']['extraLarge']] = thumbnail
         except:
             Log.Error('Error: Show has no posters: ' + metadata.id)
@@ -169,9 +173,11 @@ def update_anime(type, metadata, media, force):
         # Banners
         if metadata.banners is None or force:
             try:
-                thumbnail = Proxy.Preview(HTTP.Request(
-                    anime['bannerImage'], immediate = True
-                ).content)
+                thumbnail = Proxy.Preview(
+                    requests.get(
+                        anime['bannerImage']
+                    ).raw
+                )
                 metadata.banners[anime['bannerImage']] = thumbnail
             except:
                 Log.Error('Error: Show has no banners: ' + metadata.id)
