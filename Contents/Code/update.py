@@ -53,12 +53,13 @@ def update_anime(type, metadata, media, force):
     # Posters
     if metadata.posters is None or force:
         try:            
-            thumbnail = Proxy.Preview(
+            thumbnail = Proxy.Media(
                 requests.get(
-                    anime['coverImage']['medium'],
+                    anime['coverImage']['extraLarge'],
                     verify=certifi.where()
                 ).content
             )
+            # //save file
             metadata.posters[anime['coverImage']['extraLarge']] = thumbnail
         except:
             Log.Error('Error: Show has no posters: ' + metadata.id)
@@ -174,7 +175,7 @@ def update_anime(type, metadata, media, force):
         # Banners
         if metadata.banners is None or force:
             try:
-                thumbnail = Proxy.Preview(
+                thumbnail = Proxy.Media(
                     requests.get(
                         anime['bannerImage'],
                         verify=certifi.where()
