@@ -12,8 +12,8 @@ This plugin will allow you to use AniList metadata for a Plex library.
 
 To use the agent, create a new library in Plex and select AniList as the metadata agent. There is a TV shows agent, and a movies agent.
 
-I reccomend using [Absolute Series Scanner](https://github.com/ZeroQI/Absolute-Series-Scanner/).
+I recommend using [Absolute Series Scanner](https://github.com/ZeroQI/Absolute-Series-Scanner/).
 
 
 
-Credit to matthewdias for the Kitsu scanner that this is based on, 99% his work, just changed the endpoints and data structure,
+Credit to matthewdias for the Kitsu scanner that this is based on.
