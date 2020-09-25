@@ -1,4 +1,5 @@
 from datetime import datetime
+from time import sleep
 import certifi
 import requests
 
@@ -87,50 +88,28 @@ def get_anime(id):
         Log.Error('Error getting anime info')
     return
 
-def get_anime_kitsu(id):
-    headers = {
-        'Accept': 'application/vnd.api+json',
-        'Content-Type': 'application/vnd.api+json'
-    }
-
-    try:
-        return requests.get(
-            'https://kitsu.io/api/edge/mappings?filter[externalSite]=myanimelist/anime&filter[externalId]=' + id + '&include=item',
-            headers = headers,
-            verify=certifi.where()
-        ).content
-    except:
-        Log.Error('Error getting kitsu data')
-    return
-
-def get_episodes_kitsu(id):
+def get_episodes(id):
+    sleep(4)
     anime_episodes = {}
 
-    headers = {
-        'Accept': 'application/vnd.api+json',
-        'Content-Type': 'application/vnd.api+json'
-    }
+    mal_request = requests.get(
+        'https://api.jikan.moe/v3/anime/' + id + '/episodes',
+        verify=certifi.where()
+    ).content
+    episodes = JSON.ObjectFromString(mal_request)
+
     try:
-        kitsuRequest = requests.get(
-            'https://kitsu.io/api/edge/anime/' + id + '/relationships/episodes',
-            headers = headers,
+        mal_request = requests.get(
+            'https://api.jikan.moe/v3/anime/' + id + '/episodes',
             verify=certifi.where()
         ).content
-        episodes = JSON.ObjectFromString(kitsuRequest)
+        episodes = JSON.ObjectFromString(mal_request)
 
-        for episode in episodes['data']:
-            episodeRequest = requests.get(
-                'https://kitsu.io/api/edge/episodes/' + episode['id'] + '?fields[episodes]=synopsis,canonicalTitle,relativeNumber,number,airdate',
-                headers = headers,
-                verify=certifi.where()
-            ).content
-            episode = JSON.ObjectFromString(episodeRequest)
-
-            if episode['data']['attributes']['relativeNumber']:
-                anime_episodes[episode['data']['attributes']['relativeNumber']] = episode['data']
-            else: anime_episodes[episode['data']['attributes']['number']] = episode['data']
-
+        for episode in episodes['episodes']:
+            if not episode['recap']:
+                anime_episodes[episode['episode_id']] = episode
+                
         return anime_episodes
     except:
-        Log.Error('Error anime episodes info')
+        Log.Error('Error getting mal data')
     return

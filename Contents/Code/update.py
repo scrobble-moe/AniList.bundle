@@ -1,30 +1,21 @@
 from datetime import datetime
-from anilist import get_anime, get_anime_kitsu, get_episodes_kitsu
+from providers import get_anime, get_episodes
 import certifi
 import requests
 import re
 
 def update_anime(type, metadata, media, force):
     result = JSON.ObjectFromString(get_anime(metadata.id))
-    has_kitsu_data = True
-    has_kitsu_episode_data = True
     anime = result['data']['Page']['media'][0]
-
-    # Get Kistu data
-    try:
-        kitsu = JSON.ObjectFromString(get_anime_kitsu(str(anime['idMal'])))
-    except:
-        has_kitsu_data = False
-        Log.Error('Error: Show has no relation for getting kitsu data: ' + metadata.id)
-
+    has_mal_page = True
     #Get episode data
-    if has_kitsu_data and Prefs['episode_support']:
+    if Prefs['episode_support']:
         try:
-            kitsu_episodes = get_episodes_kitsu(str(kitsu['included'][0]['id']))
+            mal_episodes = get_episodes(str(anime['idMal']))
         except:
-            has_kitsu_episode_data = False
+            has_mal_page = False
             Log.Error('Error: Show has no episode data: ' + metadata.id)
-    else: has_kitsu_episode_data = False
+    else: has_mal_page = False
 
     # Genres
     if metadata.genres is None or force:
@@ -67,7 +58,8 @@ def update_anime(type, metadata, media, force):
     # Summary
     if metadata.summary is None or force:
         try:
-            metadata.summary = anime['description']
+            cleanr = re.compile('<.*?>')
+            metadata.summary = re.sub(cleanr, '', anime['description'])
         except:
             Log.Error('Error: Show has no summary: ' + metadata.id)
 
@@ -98,14 +90,6 @@ def update_anime(type, metadata, media, force):
             metadata.studio = anime['studios']['edges'][0]['node']['name']
         except:
             Log.Error('Error: Show has no studio: ' + metadata.id)
-
-    # Content Rating
-    if has_kitsu_data and metadata.content_rating is None or force:
-        try:
-            metadata.content_rating = kitsu['included'][0]['attributes']['ageRating']
-        except:
-            Log.Error('Error: Show has no content rating: ' + metadata.id)
-
 
     if metadata.roles is None or force:
         metadata.roles.clear()
@@ -213,36 +197,32 @@ def update_anime(type, metadata, media, force):
                 Log.Error('Error: Show has no staff: ' + metadata.id)
 
     # Episodes
-    if Prefs['episode_support'] and has_kitsu_episode_data and 1 in media.seasons:
-        update_episodes(media, metadata, force, anime, kitsu_episodes)
+    if Prefs['episode_support'] and has_mal_page and 1 in media.seasons:
+        update_episodes(media, metadata, force, anime, mal_episodes)
 
 
-def update_episodes(media, metadata, force, anime, kitsu_episodes):
+def update_episodes(media, metadata, force, anime, mal_episodes):
 
     for plex_episode_number in media.seasons[1].episodes:
         try:
             episode = metadata.seasons[1].episodes[int(plex_episode_number)]
-            kitsu_episode = kitsu_episodes.get(int(plex_episode_number))
-
-            # Description
-            if episode.summary is None or force:
-                try:
-                    cleanr = re.compile('<.*?>')
-                    episode.summary = re.sub(cleanr, '', kitsu_episode['attributes']['synopsis'])
-                except:
-                    Log.Error('Error: Episode has no summary: ' + metadata.id)
-
+            mal_episode = mal_episodes.get(int(plex_episode_number))
             # Title
             if episode.title is None or force:
                 try:
-                    episode.title = kitsu_episode['attributes']['canonicalTitle']
+                    if Prefs['title_language'] == 'romaji':
+                        episode.title = mal_episode['title_romanji']
+                    elif Prefs['title_language'] == 'english':
+                        episode.title = mal_episode['title']
+                    elif Prefs['title_language'] == 'native':
+                        episode.title = mal_episode['title_japanese']
                 except:
                     Log.Error('Error: Episode has no title: ' + metadata.id)
 
             # Air date
-            if episode.originally_available_at is None or force:
+            if episode.aired is None or force:
                 try:
-                    split = map(lambda s: int(s), kitsu_episode['attributes']['airdate'].split('-'))
+                    split = map(lambda s: int(s), mal_episode['aired'].split('-'))
                     episode.originally_available_at = datetime(split[0], split[1], split[2])
                 except:
                     Log.Error('Error: Episode has no air date: ' + metadata.id)

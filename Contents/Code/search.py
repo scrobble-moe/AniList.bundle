@@ -30,7 +30,7 @@ def search_anime(type, results, media, lang):
     '''
     if Prefs['folder_id']:
         variables = '''{
-            "id": "'''+ re.match('(.*?) - ', search_term).group(1) +'''"
+            "id": "'''+ re.match('^([0-9]*?) ', search_term).group(1) +'''"
         }'''
     elif search_term.isdigit():
         variables = '''{
