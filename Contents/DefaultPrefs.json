@@ -7,11 +7,11 @@
     "default": "True"
   },
   {
-    "id": "folder_id",
-    "label": "Use id to match, i.e '101348 - Vinland Saga'",
-    "type": "bool",
-    "values": ["True", "False"],
-    "default": "False"
+    "id": "search_type",
+    "label": "Naming convention used to search",
+    "type": "enum",
+    "values": ["id-name", "name-id", "id", "name", "any"],
+    "default": "id-name"
   },
   {
     "id": "title_language",
@@ -21,10 +21,28 @@
     "default": "romaji"
   },
   {
+    "id": "episode_title_language",
+    "label": "Episode title language overide",
+    "type": "enum",
+    "values": ["default", "japanese", "romaji"],
+    "default": "default"
+  },
+  {
     "id": "va_language",
     "label": "Voice Actor Language Preference",
     "type": "enum",
-    "values": ["JAPANESE", "ENGLISH", "KOREAN", "ITALIAN", "SPANISH", "PORTUGUESE", "FRENCH", "GERMAN", "HEBREW", "HUNGARIAN"],
-    "default": "JAPANESE"
+    "values": [
+      "Japanese",
+      "English",
+      "Korean",
+      "Italian",
+      "Spanish",
+      "Portuguese",
+      "French",
+      "German",
+      "Hebrew",
+      "Hungarian"
+    ],
+    "default": "Japanese"
   }
 ]

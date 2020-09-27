@@ -1,5 +1,5 @@
+from utils import requests_retry_session
 import certifi
-import requests
 import re
 
 
@@ -28,23 +28,38 @@ def search_anime(type, results, media, lang):
         }
     }
     '''
-    if Prefs['folder_id']:
+
+    if Prefs['search_type'] == 'id-name':
         variables = '''{
             "id": "'''+ re.match('^([0-9]*?) ', search_term).group(1) +'''"
         }'''
-    elif search_term.isdigit():
+    if Prefs['search_type'] == 'name-id':
         variables = '''{
-            "id": "'''+ search_term +'''"
+            "id": "'''+ re.match(' ([0-9]*?)$', search_term).group(1) +'''"
         }'''
-    else: 
+    if Prefs['search_type'] == 'id':
+        variables = '''{
+            "id": "'''+ re.match('^([0-9]*?)$', search_term).group(1) +'''"
+        }'''
+    if Prefs['search_type'] == 'name':
         variables = '''{
             "search": "'''+ search_term +'''",
-            "perPage": 6,
-            "seasonYear": '''+ str(search_year) +'''
+            "perPage": 6
         }'''
+    if Prefs['search_type'] == 'any':
+        if search_term.isdigit():
+            variables = '''{
+                "id": "'''+ search_term +'''"
+            }'''
+        else: 
+            variables = '''{
+                "search": "'''+ search_term +'''",
+                "perPage": 6,
+                "seasonYear": '''+ str(search_year) +'''
+            }'''
 
     try:
-        request = requests.post(
+        request = requests_retry_session().post(
             'https://graphql.anilist.co',
             data = {'query': query, 'variables': variables},
             verify=certifi.where()

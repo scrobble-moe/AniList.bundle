@@ -62,7 +62,7 @@ def get_anime(id):
                                 }
                             }
                             role
-                            voiceActors(language: ''' + Prefs['va_language'] + ''') {
+                            voiceActors(language: ''' + str(Prefs['va_language']).upper() + ''') {
                                 name {
                                     full
                                 }

@@ -3,6 +3,11 @@ from update import update_anime
 
 EN = Locale.Language.English
 
+
+def ValidatePrefs():
+    #maybe do something here?
+    return MessageContainer('Success', "DefaultPrefs.json valid")
+
 def Start():
     HTTP.CacheTime = CACHE_1DAY
 

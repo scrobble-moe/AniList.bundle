@@ -1,11 +1,13 @@
 from datetime import datetime
 from providers import get_anime, get_episodes
 import certifi
-import requests
+from utils import requests_retry_session
 import re
+import base64
 
 def update_anime(type, metadata, media, force):
     result = JSON.ObjectFromString(get_anime(metadata.id))
+    Log.Error(result)
     anime = result['data']['Page']['media'][0]
     has_mal_page = True
     #Get episode data
@@ -44,14 +46,14 @@ def update_anime(type, metadata, media, force):
     # Posters
     if metadata.posters is None or force:
         try:            
-            thumbnail = Proxy.Media(
-                requests.get(
+            poster = Proxy.Media(
+                requests_retry_session().get(
                     anime['coverImage']['extraLarge'],
                     verify=certifi.where()
                 ).content
             )
             # //save file
-            metadata.posters[anime['coverImage']['extraLarge']] = thumbnail
+            metadata.posters[anime['coverImage']['extraLarge']] = poster
         except:
             Log.Error('Error: Show has no posters: ' + metadata.id)
       
@@ -67,13 +69,13 @@ def update_anime(type, metadata, media, force):
     if metadata.countries is None or force:
         try:
             if anime['countryOfOrigin'] == 'JP':
-                metadata.countries = ["Japan"]
+                metadata.countries = ['Japan']
             elif anime['countryOfOrigin'] == 'CN':
-                metadata.countries = ["China"]
+                metadata.countries = ['China']
             elif anime['countryOfOrigin'] == 'KR':
-                metadata.countries = ["Korea"]
+                metadata.countries = ['Korea']
             else:
-                metadata.countries = ["Unknown, please report"]
+                metadata.countries = ['Unknown, please report']
         except:
             Log.Error('Error: Show has no country of origin: ' + metadata.id)
         
@@ -159,13 +161,14 @@ def update_anime(type, metadata, media, force):
         # Banners
         if metadata.banners is None or force:
             try:
-                thumbnail = Proxy.Media(
-                    requests.get(
+                banner_hash = base64.b64encode(str(anime['bannerImage']))
+                banner = Proxy.Media(
+                    requests_retry_session().get(
                         anime['bannerImage'],
                         verify=certifi.where()
-                    ).raw
+                    ).content
                 )
-                metadata.banners[anime['bannerImage']] = thumbnail
+                metadata.banners[banner_hash] = banner
             except:
                 Log.Error('Error: Show has no banners: ' + metadata.id)
 
@@ -198,33 +201,41 @@ def update_anime(type, metadata, media, force):
 
     # Episodes
     if Prefs['episode_support'] and has_mal_page and 1 in media.seasons:
-        update_episodes(media, metadata, force, anime, mal_episodes)
+        update_episodes(media, metadata, force, mal_episodes)
 
 
-def update_episodes(media, metadata, force, anime, mal_episodes):
-
+def update_episodes(media, metadata, force, mal_episodes):
     for plex_episode_number in media.seasons[1].episodes:
         try:
             episode = metadata.seasons[1].episodes[int(plex_episode_number)]
             mal_episode = mal_episodes.get(int(plex_episode_number))
-            # Title
-            if episode.title is None or force:
-                try:
-                    if Prefs['title_language'] == 'romaji':
-                        episode.title = mal_episode['title_romanji']
-                    elif Prefs['title_language'] == 'english':
-                        episode.title = mal_episode['title']
-                    elif Prefs['title_language'] == 'native':
-                        episode.title = mal_episode['title_japanese']
-                except:
-                    Log.Error('Error: Episode has no title: ' + metadata.id)
-
-            # Air date
-            if episode.aired is None or force:
-                try:
-                    split = map(lambda s: int(s), mal_episode['aired'].split('-'))
-                    episode.originally_available_at = datetime(split[0], split[1], split[2])
-                except:
-                    Log.Error('Error: Episode has no air date: ' + metadata.id)
         except:
-            pass
+            Log.Error('Error: could not get episode data')
+        try:
+        #     # Title
+            if episode.title is None or force:
+                if Prefs['episode_title_language'] == 'default' and mal_episode['title']:
+                    episode.title = mal_episode['title']
+                elif Prefs['episode_title_language'] == 'japanese' and mal_episode['title_japanese']:
+                    episode.title = mal_episode['title_japanese']
+                elif Prefs['episode_title_language'] == 'romaji' and mal_episode['title_romaji']:
+                    episode.title = mal_episode['title_romaji']
+                else:
+                    if mal_episode['title']:
+                        episode.title = mal_episode['title']
+                    elif mal_episode['title_romanji']:
+                        episode.title = mal_episode['title_romanji']
+                    elif mal_episode['title_japanese']:
+                        episode.title = mal_episode['title_japanese']
+        except:
+            Log.Error('Error: Episode has no title: ' + metadata.id + ' Episode:' + str(plex_episode_number))
+
+        # Air date
+        if mal_episode and episode.originally_available_at is None or force:
+            try:
+                if mal_episode['aired']:
+                    cleanr = re.compile('\+[0-9][0-9]:[0-9][0-9]')
+                    timestr = re.sub(cleanr, '', mal_episode['aired'])
+                    episode.originally_available_at = datetime.strptime(timestr, '%Y-%m-%dT%H:%M:%S')
+            except:
+                Log.Error('Error: Episode has no air date: ' + metadata.id + ' Episode:' + str(plex_episode_number))
