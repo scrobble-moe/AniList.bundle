@@ -7,7 +7,6 @@ import base64
 
 def update_anime(type, metadata, media, force):
     result = JSON.ObjectFromString(get_anime(metadata.id))
-    Log.Error(result)
     anime = result['data']['Page']['media'][0]
     has_mal_page = True
     #Get episode data
