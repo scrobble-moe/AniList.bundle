@@ -35,7 +35,7 @@ def search_anime(type, results, media, lang):
         }'''
     if Prefs['search_type'] == 'name-id':
         variables = '''{
-            "id": "'''+ re.match(' ([0-9]*?)$', search_term).group(1) +'''"
+            "id": "'''+ re.search(' ([0-9]*?)$', search_term).group(1) +'''"
         }'''
     if Prefs['search_type'] == 'id':
         variables = '''{

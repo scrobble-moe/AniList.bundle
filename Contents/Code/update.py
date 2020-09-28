@@ -158,7 +158,7 @@ def update_anime(type, metadata, media, force):
     if type == 'tv':
 
         # Banners
-        if metadata.banners is None or force:
+        if metadata.banners is None or metadata.art is None or force:
             try:
                 banner_hash = base64.b64encode(str(anime['bannerImage']))
                 banner = Proxy.Media(
@@ -167,12 +167,29 @@ def update_anime(type, metadata, media, force):
                         verify=certifi.where()
                     ).content
                 )
-                metadata.banners[banner_hash] = banner
             except:
                 Log.Error('Error: Show has no banners: ' + metadata.id)
+            if metadata.banners is None or force:
+                metadata.banners[banner_hash] = banner
+            if metadata.art is None or force:
+                metadata.art[banner_hash] = banner
+            
 
     # Movie Specific
     if type == 'movie':
+
+        if metadata.art is None or force:
+            try:
+                banner_hash = base64.b64encode(str(anime['bannerImage']))
+                banner = Proxy.Media(
+                    requests_retry_session().get(
+                        anime['bannerImage'],
+                        verify=certifi.where()
+                    ).content
+                )
+                metadata.art[banner_hash] = banner
+            except:
+                Log.Error('Error: Show has no banners: ' + metadata.id)
 
         # Year
         if metadata.year is None or force:
