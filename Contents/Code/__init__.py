@@ -9,14 +9,14 @@ def ValidatePrefs():
     return MessageContainer('Success', "DefaultPrefs.json valid")
 
 def Start():
-    HTTP.CacheTime = CACHE_1DAY
+    HTTP.CacheTime = CACHE_1MINUTE*30
 
 class AniListTV(Agent.TV_Shows):
     name = 'AniList'
     languages = [ EN ]
     primary_provider = True
     fallback_agent = False
-    accepts_from = None
+    accepts_from = ['com.plexapp.agents.localmedia']
     contributes_to = None
 
     def search(self, results, media, lang, manual):
@@ -30,7 +30,7 @@ class AniListMovie(Agent.Movies):
     languages = [ EN ]
     primary_Provider = True
     fallback_agent = False
-    accepts_from = None
+    accepts_from = ['com.plexapp.agents.localmedia']
     contributes_to = None
 
     def search(self, results, media, lang, manual):

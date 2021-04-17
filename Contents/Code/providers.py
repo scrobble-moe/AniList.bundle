@@ -14,11 +14,16 @@ def get_anime(id):
                     description
                     format
                     idMal
+                    season
+                    seasonYear
                     countryOfOrigin
                     bannerImage
                     coverImage {
                         extraLarge
                         medium
+                    }
+                    tags {
+                        name
                     }
                     staff {
                         edges {
@@ -108,7 +113,7 @@ def get_episodes(id):
         for episode in episodes['episodes']:
             if not episode['recap']:
                 anime_episodes[episode['episode_id']] = episode
-                
+
         return anime_episodes
     except:
         Log.Error('Error getting mal data')

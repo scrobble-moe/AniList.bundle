@@ -6,7 +6,9 @@ import re
 import base64
 
 def update_anime(type, metadata, media, force):
-    result = JSON.ObjectFromString(get_anime(metadata.id))
+    resp = get_anime(metadata.id)
+    Log.Debug("Anilist Response: {}".format(resp))
+    result = JSON.ObjectFromString(resp)
     anime = result['data']['Page']['media'][0]
     has_mal_page = True
     #Get episode data
@@ -19,201 +21,185 @@ def update_anime(type, metadata, media, force):
     else: has_mal_page = False
 
     # Genres
-    if metadata.genres is None or force:
-        metadata.genres.clear()
-        try:
-            metadata.genres = anime['genres']
-        except:
-            Log.Error('Error: Show has no genres: ' + metadata.id)
-        
+    metadata.genres.clear()
+    try:
+        metadata.genres = anime['genres'] + anime['tags'] + [anime['format']] + [anime['status']] + [anime['season'] + ' ' + anime['seasonYear']]
+    except:
+        Log.Error('Error: Show has no genres: ' + metadata.id)
+
     # Rating
-    if metadata.rating is None or force:
-        try:
-            metadata.rating = float(anime['averageScore']) / 10
-        except:
-            Log.Error('Error: Show has no rating: ' + metadata.id)
+    try:
+        metadata.rating = float(anime['averageScore']) / 10
+    except:
+        Log.Error('Error: Show has no rating: ' + metadata.id)
 
     # Title
-    if metadata.title is None or force:
-        title_language = Prefs['title_language']        
-        for language in anime['title']:
-            if language == title_language:
-                metadata.title = anime['title'][language]
-                break
+    title_language = Prefs['title_language']
+    for language in anime['title']:
+        if language == title_language:
             metadata.title = anime['title'][language]
+            break
+        metadata.title = anime['title'][language]
 
     # Posters
-    if metadata.posters is None or force:
-        try:            
-            poster = Proxy.Media(
-                requests_retry_session().get(
-                    anime['coverImage']['extraLarge'],
-                    verify=certifi.where()
-                ).content
-            )
-            # //save file
-            metadata.posters[anime['coverImage']['extraLarge']] = poster
-        except:
-            Log.Error('Error: Show has no posters: ' + metadata.id)
-      
+    try:
+        poster = Proxy.Media(
+            requests_retry_session().get(
+                anime['coverImage']['extraLarge'],
+                verify=certifi.where()
+            ).content
+        )
+        # //save file
+        metadata.posters.validate_keys([])
+        metadata.posters[anime['coverImage']['extraLarge']] = poster
+    except:
+        Log.Error('Error: Show has no posters: ' + metadata.id)
+
     # Summary
-    if metadata.summary is None or force:
-        try:
-            cleanr = re.compile('<.*?>')
-            metadata.summary = re.sub(cleanr, '', anime['description'])
-        except:
-            Log.Error('Error: Show has no summary: ' + metadata.id)
+    try:
+        cleanr = re.compile('<.*?>')
+        metadata.summary = re.sub(cleanr, '', anime['description'])
+    except:
+        Log.Error('Error: Show has no summary: ' + metadata.id)
 
     # Country
-    if metadata.countries is None or force:
-        try:
-            if anime['countryOfOrigin'] == 'JP':
-                metadata.countries = ['Japan']
-            elif anime['countryOfOrigin'] == 'CN':
-                metadata.countries = ['China']
-            elif anime['countryOfOrigin'] == 'KR':
-                metadata.countries = ['Korea']
-            else:
-                metadata.countries = ['Unknown, please report']
-        except:
-            Log.Error('Error: Show has no country of origin: ' + metadata.id)
-        
+    try:
+        if anime['countryOfOrigin'] == 'JP':
+            metadata.countries = ['Japan']
+        elif anime['countryOfOrigin'] == 'CN':
+            metadata.countries = ['China']
+        elif anime['countryOfOrigin'] == 'KR':
+            metadata.countries = ['Korea']
+        else:
+            metadata.countries = ['Unknown, please report']
+    except:
+        Log.Error('Error: Show has no country of origin: ' + metadata.id)
+
     # Start Date
-    if metadata.originally_available_at is None or force:
-        try:
-            metadata.originally_available_at = datetime(anime['startDate']['year'], anime['startDate']['month'], anime['startDate']['day'])
-        except:
-            Log.Error('Error: Show has no start date: ' + metadata.id)
+    try:
+        metadata.originally_available_at = datetime(anime['startDate']['year'], anime['startDate']['month'], anime['startDate']['day'])
+    except:
+        Log.Error('Error: Show has no start date: ' + metadata.id)
 
     # Studio
-    if metadata.studio is None or force:
-        try:
-            metadata.studio = anime['studios']['edges'][0]['node']['name']
-        except:
-            Log.Error('Error: Show has no studio: ' + metadata.id)
+    try:
+        metadata.studio = anime['studios']['edges'][0]['node']['name']
+    except:
+        Log.Error('Error: Show has no studio: ' + metadata.id)
 
-    if metadata.roles is None or force:
-        metadata.roles.clear()
+    metadata.roles.clear()
 
     # Characters
-    if metadata.roles is None or force:
         # Log.Error(anime['characters']['edges'])
-        try:
-            for character in anime['characters']['edges']:
-                # Create new role
-                role = metadata.roles.new()
+    try:
+        for character in anime['characters']['edges']:
+            # Create new role
+            role = metadata.roles.new()
 
-                # Get correct VA
-                for VA in character['voiceActors']:
+            # Get correct VA
+            for VA in character['voiceActors']:
 
-                    # Set VA Name
-                    try:
-                        role.name = VA['name']['full']
-                    except: 
-                        pass
+                # Set VA Name
+                try:
+                    role.name = VA['name']['full']
+                except:
+                    pass
 
-                    # Set VA Photo
-                    try:
-                        role.photo = VA['image']['large']
-                    except: 
-                        pass
+                # Set VA Photo
+                try:
+                    role.photo = VA['image']['large']
+                except:
+                    pass
 
-                    # Set Character Name
-                    try:
-                        role.role = character['node']['name']['full']
-                    except: 
-                        pass
-        except:
-            Log.Error('Error: Show has no Characters: ' + metadata.id)
+                # Set Character Name
+                try:
+                    role.role = character['node']['name']['full']
+                except:
+                    pass
+    except:
+        Log.Error('Error: Show has no Characters: ' + metadata.id)
 
     # Staff
-    if metadata.roles is None or force:
-        try:
-            for staff in anime['staff']['edges']:
+    try:
+        for staff in anime['staff']['edges']:
 
-                # Create new role
-                role = metadata.roles.new()
+            # Create new role
+            role = metadata.roles.new()
 
-                # Set Staff Name
-                try:
-                    role.name = staff['node']['name']['full']
-                except: 
-                    pass
+            # Set Staff Name
+            try:
+                role.name = staff['node']['name']['full']
+            except:
+                pass
 
-                # Set Staff Photo
-                try:
-                    role.photo = staff['node']['image']['large']
-                except: 
-                    pass
+            # Set Staff Photo
+            try:
+                role.photo = staff['node']['image']['large']
+            except:
+                pass
 
-                # Set Staff Role
-                try:
-                    role.role = staff['role']
-                except: 
-                    pass
-        except:
-            Log.Error('Error: Show has no staff: ' + metadata.id)
+            # Set Staff Role
+            try:
+                role.role = staff['role']
+            except:
+                pass
+    except:
+        Log.Error('Error: Show has no staff: ' + metadata.id)
 
     # TV Specific
     if type == 'tv':
 
-        # Banners
-        if metadata.banners is None or metadata.art is None or force:
-            try:
-                banner_hash = base64.b64encode(str(anime['bannerImage']))
-                banner = Proxy.Media(
-                    requests_retry_session().get(
-                        anime['bannerImage'],
-                        verify=certifi.where()
-                    ).content
-                )
-            except:
-                Log.Error('Error: Show has no banners: ' + metadata.id)
-            if metadata.banners is None or force:
-                metadata.banners[banner_hash] = banner
-            if metadata.art is None or force:
-                metadata.art[banner_hash] = banner
-            
+    # Banners
+        try:
+            banner_hash = base64.b64encode(str(anime['bannerImage']))
+            banner = Proxy.Media(
+                requests_retry_session().get(
+                    anime['bannerImage'],
+                    verify=certifi.where()
+                ).content
+            )
+        except:
+            Log.Error('Error: Show has no banners: ' + metadata.id)
+            metadata.banners[banner_hash] = banner
+            metadata.art[banner_hash] = banner
+
 
     # Movie Specific
     if type == 'movie':
 
-        if metadata.art is None or force:
-            try:
-                banner_hash = base64.b64encode(str(anime['bannerImage']))
-                banner = Proxy.Media(
-                    requests_retry_session().get(
-                        anime['bannerImage'],
-                        verify=certifi.where()
-                    ).content
-                )
-                metadata.art[banner_hash] = banner
-            except:
-                Log.Error('Error: Show has no banners: ' + metadata.id)
+        try:
+            banner_hash = base64.b64encode(str(anime['bannerImage']))
+            banner = Proxy.Media(
+                requests_retry_session().get(
+                    anime['bannerImage'],
+                    verify=certifi.where()
+                ).content
+            )
+            metadata.art[banner_hash] = banner
+        except:
+            Log.Error('Error: Show has no banners: ' + metadata.id)
 
-        # Year
-        if metadata.year is None or force:
-            try:
-                metadata.year = anime['startDate']['year']
-            except:
-                Log.Error('Error: Show has no start date: ' + metadata.id)
+    # Year
+        try:
+            metadata.year = anime['startDate']['year']
+        except:
+            Log.Error('Error: Show has no start date: ' + metadata.id)
 
-        # Roles
-        if metadata.roles is None or force:
-            
-            # Staff
-            try:
-                for staff in anime['staff']['edges']:
+    # Roles
 
-                    # Director
-                    try:
-                        if staff['role'] == 'Director':
-                            director = metadata.directors.new()
-                            director.name = staff['node']['name']['full']
-                    except:
-                        pass
-            except:
-                Log.Error('Error: Show has no staff: ' + metadata.id)
+        # Staff
+        try:
+            for staff in anime['staff']['edges']:
+
+                # Director
+                try:
+                    if staff['role'] == 'Director':
+                        director = metadata.directors.new()
+                        director.name = staff['node']['name']['full']
+                except:
+                    pass
+        except:
+            Log.Error('Error: Show has no staff: ' + metadata.id)
 
     # Episodes
     if Prefs['episode_support'] and has_mal_page and 1 in media.seasons:
@@ -229,7 +215,6 @@ def update_episodes(media, metadata, force, mal_episodes):
             Log.Error('Error: could not get episode data')
         try:
         #     # Title
-            if episode.title is None or force:
                 if Prefs['episode_title_language'] == 'default' and mal_episode['title']:
                     episode.title = mal_episode['title']
                 elif Prefs['episode_title_language'] == 'japanese' and mal_episode['title_japanese']:
@@ -247,7 +232,6 @@ def update_episodes(media, metadata, force, mal_episodes):
             Log.Error('Error: Episode has no title: ' + metadata.id + ' Episode:' + str(plex_episode_number))
 
         # Air date
-        if mal_episode and episode.originally_available_at is None or force:
             try:
                 if mal_episode['aired']:
                     cleanr = re.compile('\+[0-9][0-9]:[0-9][0-9]')
