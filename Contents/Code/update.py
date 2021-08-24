@@ -4,6 +4,12 @@ import certifi
 from utils import requests_retry_session
 import re
 import base64
+try:
+    # Python 2.6-2.7
+    from HTMLParser import HTMLParser
+except ImportError:
+    # Python 3
+    from html.parser import HTMLParser
 
 def update_anime(type, metadata, media, force):
     result = JSON.ObjectFromString(get_anime(metadata.id))
@@ -51,7 +57,6 @@ def update_anime(type, metadata, media, force):
                     verify=certifi.where()
                 ).content
             )
-            # //save file
             metadata.posters[anime['coverImage']['extraLarge']] = poster
         except:
             Log.Error('Error: Show has no posters: ' + metadata.id)
@@ -59,8 +64,9 @@ def update_anime(type, metadata, media, force):
     # Summary
     if metadata.summary is None or force:
         try:
+            h = HTMLParser()
             cleanr = re.compile('<.*?>')
-            metadata.summary = re.sub(cleanr, '', anime['description'])
+            metadata.summary = re.sub(cleanr, '', h.unescape(anime['description']))
         except:
             Log.Error('Error: Show has no summary: ' + metadata.id)
 
