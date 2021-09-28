@@ -20,17 +20,32 @@ def get_anime(id):
                         extraLarge
                         medium
                     }
-                    staff {
+                    reviews {
                         edges {
-                        node {
-                            name {
-                            full
-                            }
-                            image {
-                            large
+                            node {
+                                score
+                                siteUrl
+                                summary
+                                user {
+                                    name
+                                    avatar {
+                                        large
+                                    }
+                                }
                             }
                         }
-                        role
+                    }
+                    staff {
+                        edges {
+                            node {
+                                name {
+                                    full
+                                }
+                                image {
+                                    large
+                                }
+                            }
+                            role
                         }
                     }
                     startDate {
@@ -69,7 +84,6 @@ def get_anime(id):
                                 image {
                                     large
                                 }
-                                language
                             }
                         }
                     }

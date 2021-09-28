@@ -60,7 +60,7 @@ def update_anime(type, metadata, media, force):
             metadata.posters[anime['coverImage']['extraLarge']] = poster
         except:
             Log.Error('Error: Show has no posters: ' + metadata.id)
-      
+ 
     # Summary
     if metadata.summary is None or force:
         try:
@@ -103,7 +103,6 @@ def update_anime(type, metadata, media, force):
 
     # Characters
     if metadata.roles is None or force:
-        # Log.Error(anime['characters']['edges'])
         try:
             for character in anime['characters']['edges']:
                 # Create new role
@@ -160,6 +159,47 @@ def update_anime(type, metadata, media, force):
         except:
             Log.Error('Error: Show has no staff: ' + metadata.id)
 
+    #Reviews
+    if metadata.reviews is None or force:
+        metadata.reviews.clear()
+        try:
+            for review in anime['reviews']['edges']:
+
+                # Create new review
+                r = metadata.reviews.new()
+
+                # Set Review Author
+                try:
+                    r.author = review['node']['user']['name']
+                except: 
+                    pass
+
+                # Set Review Source
+                r.source = 'AniList'
+
+                # Set Review Image
+                try:
+                    if int(review['node']['score']) >= 50:
+                        r.image = 'rottentomatoes://image.review.fresh'
+                    else:
+                        r.image = 'rottentomatoes://image.review.rotten'
+                except: 
+                    pass
+
+                # Set Review Link
+                try:
+                    r.link = review['node']['siteUrl']
+                except: 
+                    pass
+
+                # Set Review Text
+                try:
+                    r.text = review['node']['summary']
+                except: 
+                    pass
+        except:
+            Log.Error('Error: Show has no reviews: ' + metadata.id)
+
     # TV Specific
     if type == 'tv':
 
@@ -179,6 +219,10 @@ def update_anime(type, metadata, media, force):
                 metadata.banners[banner_hash] = banner
             if metadata.art is None or force:
                 metadata.art[banner_hash] = banner
+
+        # Episodes
+        if Prefs['episode_support'] and has_mal_page and 1 in media.seasons:
+            update_episodes(media, metadata, force, mal_episodes)
             
 
     # Movie Specific
@@ -220,10 +264,6 @@ def update_anime(type, metadata, media, force):
                         pass
             except:
                 Log.Error('Error: Show has no staff: ' + metadata.id)
-
-    # Episodes
-    if Prefs['episode_support'] and has_mal_page and 1 in media.seasons:
-        update_episodes(media, metadata, force, mal_episodes)
 
 
 def update_episodes(media, metadata, force, mal_episodes):
