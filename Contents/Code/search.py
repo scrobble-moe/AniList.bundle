@@ -24,6 +24,9 @@ def search_anime(type, results, media, lang):
                 startDate {
                     year
                 }
+                coverImage {
+                    extraLarge
+                }
             }
         }
     }
@@ -31,37 +34,37 @@ def search_anime(type, results, media, lang):
 
     if Prefs['search_type'] == 'id-name':
         variables = '''{
-            "id": "'''+ re.match('^([0-9]*?) ', search_term).group(1) +'''"
+            "id": "''' + re.match('^([0-9]*?) ', search_term).group(1) + '''"
         }'''
     if Prefs['search_type'] == 'name-id':
         variables = '''{
-            "id": "'''+ re.search(' ([0-9]*?)$', search_term).group(1) +'''"
+            "id": "''' + re.search(' ([0-9]*?)$', search_term).group(1) + '''"
         }'''
     if Prefs['search_type'] == 'id':
         variables = '''{
-            "id": "'''+ re.match('^([0-9]*?)$', search_term).group(1) +'''"
+            "id": "''' + re.match('^([0-9]*?)$', search_term).group(1) + '''"
         }'''
     if Prefs['search_type'] == 'name':
         variables = '''{
-            "search": "'''+ search_term +'''",
+            "search": "''' + search_term + '''",
             "perPage": 6
         }'''
     if Prefs['search_type'] == 'any':
         if search_term.isdigit():
             variables = '''{
-                "id": "'''+ search_term +'''"
+                "id": "''' + search_term + '''"
             }'''
-        else: 
+        else:
             variables = '''{
-                "search": "'''+ search_term +'''",
+                "search": "''' + search_term + '''",
                 "perPage": 6,
-                "seasonYear": '''+ str(search_year) +'''
+                "seasonYear": ''' + str(search_year) + '''
             }'''
 
     try:
         request = requests_retry_session().post(
             'https://graphql.anilist.co',
-            data = {'query': query, 'variables': variables},
+            data={'query': query, 'variables': variables},
             verify=certifi.where()
         )
     except:
@@ -71,12 +74,12 @@ def search_anime(type, results, media, lang):
     s = 100
     for result in JSON.ObjectFromString(request.content)['data']['anime']['results']:
         results.Append(MetadataSearchResult(
-            id = str(result['id']),
-            name = result['title']['romaji'],
-            year = result['startDate']['year'],
-            score = s,
-            lang = lang
+            id=str(result['id']),
+            name=result['title']['romaji'],
+            year=result['startDate']['year'],
+            thumb=result['coverImage']['extraLarge'],
+            score=s,
+            lang=lang
         ))
         s = s - 1
     return
-    

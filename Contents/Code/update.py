@@ -11,27 +11,31 @@ except ImportError:
     # Python 3
     from html.parser import HTMLParser
 
+
 def update_anime(type, metadata, media, force):
-    result = JSON.ObjectFromString(get_anime(metadata.id))
+    resp = get_anime(metadata.id)
+    Log.Debug("Anilist Response: {}".format(resp))
+    result = JSON.ObjectFromString(resp)
     anime = result['data']['Page']['media'][0]
     has_mal_page = True
-    #Get episode data
+    # Get episode data
     if Prefs['episode_support']:
         try:
             mal_episodes = get_episodes(str(anime['idMal']))
         except:
             has_mal_page = False
             Log.Error('Error: Show has no episode data: ' + metadata.id)
-    else: has_mal_page = False
+    else:
+        has_mal_page = False
 
     # Genres
-    if metadata.genres is None or force:
         metadata.genres.clear()
         try:
-            metadata.genres = anime['genres']
+            metadata.genres = anime['genres'] + anime['tags'] + [anime['format']] + [
+                anime['status']] + [anime['season'] + ' ' + anime['seasonYear']]
         except:
             Log.Error('Error: Show has no genres: ' + metadata.id)
-        
+
     # Rating
     if metadata.rating is None or force:
         try:
@@ -41,7 +45,7 @@ def update_anime(type, metadata, media, force):
 
     # Title
     if metadata.title is None or force:
-        title_language = Prefs['title_language']        
+        title_language = Prefs['title_language']
         for language in anime['title']:
             if language == title_language:
                 metadata.title = anime['title'][language]
@@ -50,23 +54,25 @@ def update_anime(type, metadata, media, force):
 
     # Posters
     if metadata.posters is None or force:
-        try:            
+        try:
             poster = Proxy.Media(
                 requests_retry_session().get(
                     anime['coverImage']['extraLarge'],
                     verify=certifi.where()
                 ).content
             )
+            metadata.posters.validate_keys([])
             metadata.posters[anime['coverImage']['extraLarge']] = poster
         except:
             Log.Error('Error: Show has no posters: ' + metadata.id)
- 
+
     # Summary
     if metadata.summary is None or force:
         try:
             h = HTMLParser()
             cleanr = re.compile('<.*?>')
-            metadata.summary = re.sub(cleanr, '', h.unescape(anime['description']))
+            metadata.summary = re.sub(
+                cleanr, '', h.unescape(anime['description']))
         except:
             Log.Error('Error: Show has no summary: ' + metadata.id)
 
@@ -83,11 +89,12 @@ def update_anime(type, metadata, media, force):
                 metadata.countries = ['Unknown, please report']
         except:
             Log.Error('Error: Show has no country of origin: ' + metadata.id)
-        
+
     # Start Date
     if metadata.originally_available_at is None or force:
         try:
-            metadata.originally_available_at = datetime(anime['startDate']['year'], anime['startDate']['month'], anime['startDate']['day'])
+            metadata.originally_available_at = datetime(
+                anime['startDate']['year'], anime['startDate']['month'], anime['startDate']['day'])
         except:
             Log.Error('Error: Show has no start date: ' + metadata.id)
 
@@ -114,19 +121,19 @@ def update_anime(type, metadata, media, force):
                     # Set VA Name
                     try:
                         role.name = VA['name']['full']
-                    except: 
+                    except:
                         pass
 
                     # Set VA Photo
                     try:
                         role.photo = VA['image']['large']
-                    except: 
+                    except:
                         pass
 
                     # Set Character Name
                     try:
                         role.role = character['node']['name']['full']
-                    except: 
+                    except:
                         pass
         except:
             Log.Error('Error: Show has no Characters: ' + metadata.id)
@@ -142,24 +149,24 @@ def update_anime(type, metadata, media, force):
                 # Set Staff Name
                 try:
                     role.name = staff['node']['name']['full']
-                except: 
+                except:
                     pass
 
                 # Set Staff Photo
                 try:
                     role.photo = staff['node']['image']['large']
-                except: 
+                except:
                     pass
 
                 # Set Staff Role
                 try:
                     role.role = staff['role']
-                except: 
+                except:
                     pass
         except:
             Log.Error('Error: Show has no staff: ' + metadata.id)
 
-    #Reviews
+    # Reviews
     if metadata.reviews is None or force:
         metadata.reviews.clear()
         try:
@@ -171,7 +178,7 @@ def update_anime(type, metadata, media, force):
                 # Set Review Author
                 try:
                     r.author = review['node']['user']['name']
-                except: 
+                except:
                     pass
 
                 # Set Review Source
@@ -183,19 +190,19 @@ def update_anime(type, metadata, media, force):
                         r.image = 'rottentomatoes://image.review.fresh'
                     else:
                         r.image = 'rottentomatoes://image.review.rotten'
-                except: 
+                except:
                     pass
 
                 # Set Review Link
                 try:
                     r.link = review['node']['siteUrl']
-                except: 
+                except:
                     pass
 
                 # Set Review Text
                 try:
                     r.text = review['node']['summary']
-                except: 
+                except:
                     pass
         except:
             Log.Error('Error: Show has no reviews: ' + metadata.id)
@@ -223,7 +230,6 @@ def update_anime(type, metadata, media, force):
         # Episodes
         if Prefs['episode_support'] and has_mal_page and 1 in media.seasons:
             update_episodes(media, metadata, force, mal_episodes)
-            
 
     # Movie Specific
     if type == 'movie':
@@ -250,7 +256,7 @@ def update_anime(type, metadata, media, force):
 
         # Roles
         if metadata.roles is None or force:
-            
+
             # Staff
             try:
                 for staff in anime['staff']['edges']:
@@ -274,7 +280,7 @@ def update_episodes(media, metadata, force, mal_episodes):
         except:
             Log.Error('Error: could not get episode data')
         try:
-        #     # Title
+            #     # Title
             if episode.title is None or force:
                 if Prefs['episode_title_language'] == 'default' and mal_episode['title']:
                     episode.title = mal_episode['title']
@@ -290,7 +296,8 @@ def update_episodes(media, metadata, force, mal_episodes):
                     elif mal_episode['title_japanese']:
                         episode.title = mal_episode['title_japanese']
         except:
-            Log.Error('Error: Episode has no title: ' + metadata.id + ' Episode:' + str(plex_episode_number))
+            Log.Error('Error: Episode has no title: ' +
+                      metadata.id + ' Episode:' + str(plex_episode_number))
 
         # Air date
         if mal_episode and episode.originally_available_at is None or force:
@@ -298,6 +305,8 @@ def update_episodes(media, metadata, force, mal_episodes):
                 if mal_episode['aired']:
                     cleanr = re.compile('\+[0-9][0-9]:[0-9][0-9]')
                     timestr = re.sub(cleanr, '', mal_episode['aired'])
-                    episode.originally_available_at = datetime.strptime(timestr, '%Y-%m-%dT%H:%M:%S')
+                    episode.originally_available_at = datetime.strptime(
+                        timestr, '%Y-%m-%dT%H:%M:%S')
             except:
-                Log.Error('Error: Episode has no air date: ' + metadata.id + ' Episode:' + str(plex_episode_number))
+                Log.Error('Error: Episode has no air date: ' +
+                          metadata.id + ' Episode:' + str(plex_episode_number))

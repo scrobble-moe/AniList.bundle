@@ -3,6 +3,7 @@ from time import sleep
 import certifi
 import requests
 
+
 def get_anime(id):
     query = '''
         query {
@@ -14,11 +15,16 @@ def get_anime(id):
                     description
                     format
                     idMal
+                    season
+                    seasonYear
                     countryOfOrigin
                     bannerImage
                     coverImage {
                         extraLarge
                         medium
+                    }
+                    tags {
+                        name
                     }
                     reviews {
                         edges {
@@ -95,12 +101,13 @@ def get_anime(id):
     try:
         return requests.post(
             'https://graphql.anilist.co',
-            data = {'query': query},
+            data={'query': query},
             verify=certifi.where()
         ).content
     except:
         Log.Error('Error getting anime info')
     return
+
 
 def get_episodes(id):
     sleep(4)
@@ -122,7 +129,7 @@ def get_episodes(id):
         for episode in episodes['episodes']:
             if not episode['recap']:
                 anime_episodes[episode['episode_id']] = episode
-                
+
         return anime_episodes
     except:
         Log.Error('Error getting mal data')
