@@ -1,8 +1,6 @@
-from datetime import datetime
 from time import sleep
 import certifi
 import requests
-
 
 def get_anime(id):
     query = '''
@@ -10,6 +8,7 @@ def get_anime(id):
             Page {
                 media(id: ''' + id + ''') {
                     genres
+                    duration
                     episodes
                     averageScore
                     description
@@ -110,27 +109,27 @@ def get_anime(id):
 
 
 def get_episodes(id):
-    sleep(4)
+    sleep(4) #TODO: Rate limit FIX
     anime_episodes = {}
-
-    mal_request = requests.get(
-        'https://api.jikan.moe/v3/anime/' + id + '/episodes',
-        verify=certifi.where()
-    ).content
-    episodes = JSON.ObjectFromString(mal_request)
-
+    page = 1
+    has_next_page = True
     try:
-        mal_request = requests.get(
-            'https://api.jikan.moe/v3/anime/' + id + '/episodes',
-            verify=certifi.where()
-        ).content
-        episodes = JSON.ObjectFromString(mal_request)
-
-        for episode in episodes['episodes']:
-            if not episode['recap']:
-                anime_episodes[episode['episode_id']] = episode
-
+        while has_next_page:
+            episodes = get_episode_data(id, page)
+            has_next_page = episodes['pagination']['has_next_page']
+            page += 1
+            for episode in episodes['data']:
+                if not episode['recap']:
+                    anime_episodes[episode['mal_id']] = episode
         return anime_episodes
     except:
         Log.Error('Error getting mal data')
     return
+
+def get_episode_data(id, page):
+    
+    mal_request = requests.get(
+        'https://api.jikan.moe/v4/anime/' + id + '/episodes?page=' + str(page),
+        verify=certifi.where()
+    ).content
+    return JSON.ObjectFromString(mal_request)

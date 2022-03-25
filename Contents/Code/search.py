@@ -1,7 +1,7 @@
 from utils import requests_retry_session
 import certifi
 import re
-
+    
 
 def search_anime(type, results, media, lang):
     search_term = media.show if type == 'tv' else media.name
@@ -77,7 +77,6 @@ def search_anime(type, results, media, lang):
             id=str(result['id']),
             name=result['title']['romaji'],
             year=result['startDate']['year'],
-            thumb=result['coverImage']['extraLarge'],
             score=s,
             lang=lang
         ))

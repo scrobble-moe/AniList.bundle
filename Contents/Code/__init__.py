@@ -1,5 +1,5 @@
 from search import search_anime
-from update import update_anime
+from update import update_anime, update_movie
 
 EN = Locale.Language.English
 
@@ -25,7 +25,7 @@ class AniListTV(Agent.TV_Shows):
         search_anime('tv', results, media, lang)
 
     def update(self, metadata, media, lang, force):
-        update_anime('tv', metadata, media, force)
+        update_anime(metadata, media, force)
 
 
 class AniListMovie(Agent.Movies):
@@ -40,4 +40,4 @@ class AniListMovie(Agent.Movies):
         search_anime('movie', results, media, lang)
 
     def update(self, metadata, media, lang, force):
-        update_anime('movie', metadata, media, force)
+        update_movie(metadata, media, force)
