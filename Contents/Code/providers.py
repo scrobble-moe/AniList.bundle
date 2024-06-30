@@ -98,6 +98,7 @@ def get_anime(id):
     '''
 
     try:
+        sleep(1)
         return requests.post(
             'https://graphql.anilist.co',
             data={'query': query},
@@ -127,7 +128,7 @@ def get_episodes(id):
     return
 
 def get_episode_data(id, page):
-    
+
     mal_request = requests.get(
         'https://api.jikan.moe/v4/anime/' + id + '/episodes?page=' + str(page),
         verify=certifi.where()
