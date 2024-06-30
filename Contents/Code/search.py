@@ -1,7 +1,8 @@
 from utils import requests_retry_session
+from time import sleep
 import certifi
 import re
-    
+
 
 def search_anime(type, results, media, lang):
     search_term = media.show if type == 'tv' else media.name
@@ -62,6 +63,7 @@ def search_anime(type, results, media, lang):
             }'''
 
     try:
+        sleep(1)
         request = requests_retry_session().post(
             'https://graphql.anilist.co',
             data={'query': query, 'variables': variables},

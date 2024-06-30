@@ -40,7 +40,7 @@ def update_generic(metadata, media, force, anime):
             metadata.genres.add(str(str(anime['seasonYear']) + ' ' + anime['season']))
         except:
             Log.Error('Error: Show has no season or seasonYear: ' + metadata.id)
-    
+
 
     # tags
 
@@ -198,7 +198,7 @@ def update_anime(metadata, media, force):
             )
             metadata.banners[banner_hash] = banner
         except:
-            Log.Error('Error: Show has no banners: ' + metadata.id)   
+            Log.Error('Error: Show has no banners: ' + metadata.id)
 
     # art
     if metadata.art is None or force:
@@ -503,7 +503,7 @@ def update_movie(metadata, media, force):
             )
             metadata.banners[banner_hash] = banner
         except:
-            Log.Error('Error: Show has no banners: ' + metadata.id)   
+            Log.Error('Error: Show has no banners: ' + metadata.id)
 
     # themes
 
@@ -553,6 +553,3 @@ def update_episodes(media, metadata, force, mal_episodes):
                     Log.Error('Error: Episode has no air date: ' + metadata.id + ' Episode:' + str(plex_episode_number))
         except:
             Log.Error('Error: could not get episode data')
-        
-
-        
